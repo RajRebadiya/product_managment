@@ -38,11 +38,12 @@ return [
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'staff',
+            'provider' => 'users',
         ],
+        
         'api' => [
             'driver' => 'token',
-            'provider' => 'staff',
+            'provider' => 'users',
         ],
     ],
 
@@ -64,10 +65,13 @@ return [
     */
 
     'providers' => [
-        'staff' => [
+
+        'users' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Staff::class,
+            'model' => App\Models\User::class,
         ],
+       
+
 
         // 'users' => [
         //     'driver' => 'database',

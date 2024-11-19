@@ -101,7 +101,7 @@
                                 aria-expanded="true" aria-controls="nv-home">
                                 <div class="d-flex align-items-center">
                                     <span data-feather="pie-chart"></span>
-                                    <a class='text-dark' href="{{ route('category') }}">Add Category</a>
+                                    <a class='text-dark' href="{{ route('category') }}">Category</a>
                                 </div>
                             </a>
 

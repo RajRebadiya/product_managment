@@ -7,9 +7,13 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Staff;
 
 class ApiController extends Controller
 {
+
+
     //
     public function category_data()
     {
@@ -170,11 +174,15 @@ class ApiController extends Controller
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imageName = $image->getClientOriginalName();
+            $imageExtansion = $image->getClientOriginalExtension();
+            // dd($imageExtansion);
             $destinationPath = public_path('storage/images/' . $category_name);
-            $image->move($destinationPath, $imageName);
+            $image->move($destinationPath, $imageName . '.' . $imageExtansion);
         } else {
             return redirect()->back()->with('error', 'Product image is required.');
         }
+
+
 
         // Save the product
         $product = new Product();
@@ -324,12 +332,16 @@ class ApiController extends Controller
         }
 
         $search = $request->search;
+        // dd($search);
         $limit = $request->limit;
         $page = $request->page;
 
 
         // Use page and limit for pagination
-        $categoryQuery = Category::where('name', 'LIKE', "%{$search}%")->where('status', 'Active')->orderBy('id', 'desc');
+        $categoryQuery = Category::where('name', 'LIKE', "{$search}%")->where('status', 'Active')->orderBy('id', 'desc');
+
+        // $product_count = Product::where('category_name', 'LIKE', "{$search}%")->where('status', 'Active')->count();
+        // dd($product_count);
 
 
 
@@ -344,6 +356,7 @@ class ApiController extends Controller
                 'id' => $category->id,
                 'name' => $category->name,
                 'status' => $category->status,
+                'count' => $category->products()->count(),
                 // 'created_at' => $category->created_at->format('Y-m-d H:i:s'),
                 // 'updated_at' => $category->updated_at->format('Y-m-d H:i:s'),
             ];
@@ -513,13 +526,28 @@ class ApiController extends Controller
             ]);
         }
 
+        $imageName = $product->image; // Default to the current image name
+
         if ($request->hasFile('image')) {
             $image = $request->file('image');
-            $imageName = $image->getClientOriginalName();
-            $destinationPath = public_path('storage/images/' . $category_name);
+            $originalName = pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME); // Get the base name without extension
+            $extension = $image->getClientOriginalExtension(); // Get the extension
+            $destinationPath = public_path('storage/images/' . $category_name . '.' . $extension);
+            $imageName = $originalName . '.' . $extension; // Default name
+            $counter = 1;
+
+            // Check if a file with the same name exists, and append a counter if it does
+            while (file_exists($destinationPath . '/' . $imageName)) {
+                $imageName = $originalName . '-' . $counter . '.' . $extension;
+                $counter++;
+            }
+
+            // Move the uploaded file to the destination
             $image->move($destinationPath, $imageName);
             // $product->image = $imageName;
         }
+
+      
 
         if (Product::where('p_name', $request->p_name)->where('category_id', $request->category_id)->exists()) {
             return response()->json([
@@ -580,6 +608,147 @@ class ApiController extends Controller
             'status_code' => 200,
             'message' => 'Product stock updated successfully',
             'data' => [$product]
+        ]);
+    }
+
+    public function get_product_with_cat(Request $request)
+    {
+        // Validation rules
+        $rules = [
+            'limit' => 'required|integer',
+            'page' => 'required|integer',
+            'cat_id' => 'required|integer',
+        ];
+
+        // Validate the incoming request
+        $validator = Validator::make($request->all(), $rules);
+
+        // Check if validation fails
+        if ($validator->fails()) {
+            $errors = $validator->errors()->all();
+            $errorMessage = implode(' ', $errors);
+            return response()->json([
+                'status_code' => 400,
+                'message' => $errorMessage,
+                'data' => []
+            ]);
+        }
+
+        // Extract variables from the request
+        $search = $request->search;
+        $limit = $request->limit;
+        $page = $request->page;
+        $category_id = $request->cat_id;
+
+        // Build the query for products
+        $productsQuery = Product::where(function ($query) use ($search) {
+            $query->where('p_name', 'LIKE', "%{$search}%")
+                ->orWhere('category_name', 'LIKE', "%{$search}%");
+        })
+            ->where('status', 'Active')
+            ->when($category_id, function ($query) use ($category_id) {
+                // Apply category filter if category_id is provided
+                $query->where('category_id', $category_id);
+            })
+            ->orderBy('id', 'desc');
+
+        // Paginate the query
+        $products = $productsQuery->paginate($limit, ['*'], 'page', $page);
+
+        // Add category name directly to each product
+        $products->getCollection()->transform(function ($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->p_name,
+                'category_name' => $product->category ? $product->category->name : null,
+                'image' => $product->image,
+                'stock_status' => $product->stock_status,
+                'category_id' => $product->category_id,
+                'created_at' => $product->created_at->format('Y-m-d H:i:s'),
+                'updated_at' => $product->updated_at->format('Y-m-d H:i:s'),
+            ];
+        });
+
+        // Return a simplified response with only the data and essential pagination details
+        return response()->json([
+            'status_code' => 200,
+            'message' => 'Products successfully loaded',
+            'data' => $products->items(),
+        ]);
+    }
+
+    public function new_arrival_product(Request $request)
+    {
+        // Validation rules
+        $rules = [
+            'limit' => 'required|integer',
+            'page' => 'required|integer',
+            'cat_date' => 'required',
+        ];
+
+        // Validate the incoming request
+        $validator = Validator::make($request->all(), $rules);
+
+        // Check if validation fails
+        if ($validator->fails()) {
+            $errors = $validator->errors()->all();
+            $errorMessage = implode(' ', $errors);
+            return response()->json([
+                'status_code' => 400,
+                'message' => $errorMessage,
+                'data' => []
+            ]);
+        }
+
+        // Extract variables from the request
+        $search = $request->search;
+        $limit = $request->limit;
+        $page = $request->page;
+        $category_date = $request->cat_date;
+
+        // Build the query for products
+        $productsQuery = Product::where(function ($query) use ($search) {
+            $query->where('p_name', 'LIKE', "{$search}%")
+                ->orWhere('category_name', 'LIKE', "{$search}%");
+        })
+            ->where('status', 'Active')
+            ->when($category_date, function ($query) use ($category_date) {
+                $query->whereDate('created_at', $category_date);
+                // Apply category filter if category_id is provided
+                // $query->where('category_id', $category_id);
+            })
+            ->orderBy('id', 'desc');
+
+        if (!$productsQuery->exists()) {
+            return response()->json([
+                'status_code' => 400,
+                'message' => 'No products found',
+                'data' => []
+            ]);
+        }
+
+        // Paginate the query
+        $products = $productsQuery->paginate($limit, ['*'], 'page', $page);
+
+        // Add category name directly to each product
+        $products->getCollection()->transform(function ($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->p_name,
+                'category_name' => $product->category ? $product->category->name : null,
+                'image' => $product->image,
+                'stock_status' => $product->stock_status,
+                'category_id' => $product->category_id,
+                'created_at' => $product->created_at->format('Y-m-d H:i:s'),
+                'updated_at' => $product->updated_at->format('Y-m-d H:i:s'),
+            ];
+        });
+
+        // Return a simplified response with only the data and essential pagination details
+        return response()->json([
+            'status_code' => 200,
+            'message' => 'New ArrivalProducts successfully loaded',
+            'data' => $products->items(),
         ]);
     }
 }

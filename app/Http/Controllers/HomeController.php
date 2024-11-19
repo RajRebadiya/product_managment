@@ -82,17 +82,19 @@ class HomeController extends Controller
     {
 
 
-        // dd($request->all());
+        dd($request->all());
         $request->validate([
+            'id'=>'required',
             'category_id' => 'required|exists:categories,id',
-            'p_name' => 'required|string|max:255',
+            'p_name' => 'required|string|max:255|unique:products,p_name',
             'stock_status' => 'required|string|max:255',
             'image' => 'required|image|mimes:jpeg,png,jpg,gif',
 
         ]);
 
-
-
+        $product = Product::find($request->id);
+        $original_name = $product->p_name;
+       
         $category = Category::findOrFail($request->input('category_id'));
 
         if (!$category) {
@@ -103,7 +105,7 @@ class HomeController extends Controller
 
         if ($request->hasFile('image')) {
             $image = $request->file('image');
-            $imageName = $image->getClientOriginalName();
+            $imageName = $category_name . '_' . $request->input('p_name') . '.' . $image->getClientOriginalExtension();
             $destinationPath = public_path('storage/images/' . $category_name);
             $image->move($destinationPath, $imageName);
         } else {
@@ -118,6 +120,9 @@ class HomeController extends Controller
         $category_name = $category->name;
         $product_name = $category_name . '_' . $request->input('p_name');
 
+         if($category_name . '_' . $request->p_name == $original_name){
+            return redirect()->back()->with('error', 'Product name already exists.');
+        }
 
 
         // dd($request->all());
@@ -126,6 +131,7 @@ class HomeController extends Controller
         $product->category_id = $request->input('category_id');
         $product->image = $imageName;
         $product->stock_status = $request->input('stock_status');
+        $
         $product->save();
         return redirect()->back()->with('success', 'Product added successfully');
     }
@@ -143,6 +149,15 @@ class HomeController extends Controller
         $request->validate([
             'name' => 'required|string|max:255|unique:categories,name',
         ]);
+
+      
+            $category = Category::where('name', $request->name)->first();
+
+            if ($category) {
+                return redirect()->back()->with('error', 'Category already exists.');
+            }
+
+        
 
         $category = new Category();
         $category->name = $request->name;

@@ -20,7 +20,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::controller(ApiController::class)->group(function () {
-    Route::post('/categories', 'category_data');
+    Route::post('/categories', 'category_data')->middleware('staff.guard');
     Route::get('/products', 'product_data');
     Route::post('/product-search', 'search_products');
     Route::post('/product-add', 'product_add');
@@ -32,10 +32,8 @@ Route::controller(ApiController::class)->group(function () {
     Route::post('/edit-category', 'edit_category')->name('edit-category');
     Route::post('/edit-product', 'edit_product')->name('edit-product');
     Route::post('/product_stock_update', 'product_stock_update')->name('product_stock_update');
+    Route::post('/get_product_with_catid', 'get_product_with_catid')->name('get_product_with_catid');
+    Route::post('/get_product_with_cat', 'get_product_with_cat')->name('get_product_with_cat');
+    Route::post('/new_arrival_product', 'new_arrival_product')->name('new_arrival_product');
 });
 
-Route::controller(StaffAuthController::class)->group(function () {
-    Route::post('/register',  'register');
-    Route::post('/login', 'login');
-    Route::get('/check-auth', 'checkAuth');
-});
