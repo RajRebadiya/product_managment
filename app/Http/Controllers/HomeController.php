@@ -5,6 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
+use App\Models\Cart;
+use Illuminate\Support\Str;
+
+
 
 class HomeController extends Controller
 {
@@ -69,13 +73,14 @@ class HomeController extends Controller
         return view('admin.product.dashboard_2', compact('categories', 'products'));
     }
 
-    public function category(){
-         // Paginate categories with 10 items per page
-         $categories = Category::all();
+    public function category()
+    {
+        // Paginate categories with 10 items per page
+        $categories = Category::all();
         // dd($categories);
- 
-         // Pass paginated products and categories to the view
-         return view('admin.category.category', compact('categories'));
+
+        // Pass paginated products and categories to the view
+        return view('admin.category.category', compact('categories'));
     }
 
     public function add_product(Request $request)
@@ -84,7 +89,7 @@ class HomeController extends Controller
 
         dd($request->all());
         $request->validate([
-            'id'=>'required',
+            'id' => 'required',
             'category_id' => 'required|exists:categories,id',
             'p_name' => 'required|string|max:255|unique:products,p_name',
             'stock_status' => 'required|string|max:255',
@@ -94,7 +99,7 @@ class HomeController extends Controller
 
         $product = Product::find($request->id);
         $original_name = $product->p_name;
-       
+
         $category = Category::findOrFail($request->input('category_id'));
 
         if (!$category) {
@@ -120,7 +125,7 @@ class HomeController extends Controller
         $category_name = $category->name;
         $product_name = $category_name . '_' . $request->input('p_name');
 
-         if($category_name . '_' . $request->p_name == $original_name){
+        if ($category_name . '_' . $request->p_name == $original_name) {
             return redirect()->back()->with('error', 'Product name already exists.');
         }
 
@@ -131,8 +136,7 @@ class HomeController extends Controller
         $product->category_id = $request->input('category_id');
         $product->image = $imageName;
         $product->stock_status = $request->input('stock_status');
-        $
-        $product->save();
+        $$product->save();
         return redirect()->back()->with('success', 'Product added successfully');
     }
 
@@ -150,14 +154,14 @@ class HomeController extends Controller
             'name' => 'required|string|max:255|unique:categories,name',
         ]);
 
-      
-            $category = Category::where('name', $request->name)->first();
 
-            if ($category) {
-                return redirect()->back()->with('error', 'Category already exists.');
-            }
+        $category = Category::where('name', $request->name)->first();
 
-        
+        if ($category) {
+            return redirect()->back()->with('error', 'Category already exists.');
+        }
+
+
 
         $category = new Category();
         $category->name = $request->name;
@@ -201,7 +205,8 @@ class HomeController extends Controller
         return redirect()->back()->with('success', 'Product deleted successfully.');
     }
 
-    public function delete_category($id){
+    public function delete_category($id)
+    {
         $data = Category::find($id);
         $data->status = 'Inactive';
         $data->save();
@@ -280,5 +285,94 @@ class HomeController extends Controller
         $product->save();
 
         return redirect()->back()->with('success', 'Product status updated successfully.');
+    }
+
+    public function addToCart(Request $request)
+    {
+        // Get the product IDs from the request
+        $productIds = json_decode($request->input('product_ids'), true);
+
+        // Check if product IDs are provided
+        if (empty($productIds)) {
+            return redirect()->back()->with('error', 'No products selected.');
+        }
+
+        // Store the cart_id in the session
+
+        // Generate a unique cart ID for this batch
+        $cartId = Str::random(10); // You can use any other method to generate a unique ID
+        session(['cart_id' => $cartId]);
+
+        // Retrieve the selected products from the database
+        $products = Product::whereIn('id', $productIds)->get();
+
+        // Store each product's ID and image in the cart table
+        foreach ($products as $product) {
+            // Create a new Cart entry for each product
+            $cart = new Cart();
+            $cart->cart_id = $cartId; // Store the generated cart ID for this batch
+            $cart->image = $product->image;
+            $cart->product_id = (string) $product->id; // Store product ID as a string
+            $cart->p_name = $product->p_name; // Store the product name
+            $cart->category_name = $product->category_name; // Store the product category name
+            $cart->save(); // Save the cart entry to the database
+        }
+
+        return redirect()->route('cart')->with('success', 'Products added to cart.');
+    }
+
+    public function cart()
+    {
+        // Get the cart_id from the session
+        $cartId = session('cart_id');
+
+        // Check if cart_id exists in session
+        if (!$cartId) {
+            return redirect()->route('cart')->with('error', 'No cart found.');
+        }
+
+        // Retrieve the products using the cart_id
+        $products = Cart::where('cart_id', $cartId)->get();
+        // dd($products);
+
+        return view('admin.product.cart_product', compact('products'));
+    }
+
+    public function clearCart(Request $request)
+    {
+
+        // Get the cart_id from the session
+        $cartId = session('cart_id');
+
+        // Check if cart_id exists in session
+        if (!$cartId) {
+            return redirect()->route('cart')->with('error', 'No cart found.');
+        }
+
+        // Retrieve the products using the cart_id
+        $products = Cart::where('cart_id', $cartId)->get();
+
+        foreach ($products as $product) {
+            $product->delete();
+        }
+
+        return redirect()->route('cart')->with('success', 'Cart cleared successfully.');
+    }
+
+    public function cart_detail()
+    {
+        // Retrieve the cart_id from the session
+        $cartId = session('cart_id');
+
+        // If there is no cart_id in the session, return an error message
+        if (!$cartId) {
+            return redirect()->route('cart')->with('error', 'No cart found.');
+        }
+
+        // Retrieve cart items based on the cart_id
+        $products = Cart::where('cart_id', $cartId)->get();
+
+        // Return the cart detail view with the cart items
+        return view('admin.product.cart_product', compact('products'));
     }
 }

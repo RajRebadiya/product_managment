@@ -35,8 +35,17 @@
 
 
     <div class="mb-6">
-        <div class="d-flex flex-between-center mb-3">
-            <h3>Products List</h3>
+        <h3>Products List</h3>
+        <div class="d-flex mb-3" style="
+        justify-content: end;
+    ">
+
+            <form id="cart-form" action="{{ route('add_to_cart') }}" method="POST">
+                @csrf
+                <input type="hidden" id="cart-product-ids" name="product_ids">
+            </form>
+
+
             {{-- <div class="d-flex flex-between-center mb-3 search-box navbar-top-search-box d-none d-lg-block"
                 style="width:25rem;">
                 <form class="position-relative" id="searchForm" data-bs-toggle="search" data-bs-display="static">
@@ -52,6 +61,8 @@
 
             <!-- Results will be displayed here -->
             {{-- <ul id="products-container"></ul> --}}
+            <button id="add-to-cart-btn" class="btn btn-primary me-4">Add to Cart</button>
+            <button id="cart" class="btn btn-primary me-4" onclick="window.location='{{ route('cart_detail') }}'">Cart</button>
 
             <button class="btn btn-primary me-4" type="button" data-bs-toggle="modal" data-bs-target="#addDealModal"
                 aria-haspopup="true" aria-expanded="false" data-bs-reference="parent"><svg
@@ -64,19 +75,26 @@
                 </svg><!-- <span class="fas fa-plus me-2"></span> Font Awesome fontawesome.com -->Add New Product</button>
         </div>
         {{-- @dd($products); --}}
+
         <div id="tableExample3"
-            data-list='{"valueNames":["no","category_name","name","image" ,"stock_status" , "status"],"page":100,"pagination":true}'>
+            data-list='{"valueNames":["no","category_name","name","image" ,"stock_status" , "status"],"page":10,"pagination":true}'>
             <div class="search-box mb-3 mx-auto">
                 <form class="position-relative">
                     <input class="form-control rounded-pill search-input search form-control-sm" type="search"
                         placeholder="Search" aria-label="Search" />
                     <!-- Search icon here -->
                 </form>
+
             </div>
             <div class="table-responsive">
                 <table class="table table-striped table-sm fs-9 mb-0">
                     <thead>
                         <tr>
+                            <th class="white-space-nowrap fs-9 align-middle ps-0" style="max-width:20px; width:18px;">
+                                <div class="form-check mb-0 fs-8">
+                                    <input class="form-check-input" id="select-all-products" type="checkbox" style='width: 20px; height: 20px;' />
+                                </div>
+                            </th>
                             <th class="sort border-top border-translucent ps-3" data-sort="no">No</th>
                             <th class="sort border-top" data-sort="image">image</th>
                             <th class="sort border-top" data-sort="name">Product Name</th>
@@ -90,6 +108,14 @@
                     <tbody class="list">
                         @foreach ($products as $item)
                             <tr>
+                                <td class="align-middle" style="max-width:20px; width:18px;">
+                                    <input type="checkbox" class="form-check-input product-select"
+                                        data-product-id="{{ $item['id'] }}"
+                                        style="
+                                        height: 20px;
+                                        width: 20px;
+                                    ">
+                                </td>
                                 <td class="align-middle ps-3 no">{{ $loop->iteration }}</td>
                                 <td class="align-middle image">
                                     <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal"
@@ -111,8 +137,8 @@
                                             </div>
                                             <div class="modal-body text-center">
                                                 <!-- Full-Size Image Displayed in Modal -->
-                                                <img id="modalImage" src="" style="width: auto; height: 100%;" class="img-fluid rounded"
-                                                    alt="Full-Size Image">
+                                                <img id="modalImage" src="" style="width: auto; height: 100%;"
+                                                    class="img-fluid rounded" alt="Full-Size Image">
                                             </div>
                                         </div>
                                     </div>
@@ -188,6 +214,9 @@
             </div>
         </div>
     </div>
+
+
+
 
     <form action="{{ route('add-product') }}" method="post" enctype="multipart/form-data">
         @csrf
@@ -306,5 +335,95 @@
             // Redirect to edit page
             window.location.href = `/categories/${id}/edit`;
         }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Track selected product IDs globally
+            let selectedProductIds = [];
+
+            // Restore previously selected checkboxes
+            function restoreSelections() {
+                const productCheckboxes = document.querySelectorAll('.product-select');
+                productCheckboxes.forEach((checkbox) => {
+                    const productId = checkbox.getAttribute('data-product-id');
+                    checkbox.checked = selectedProductIds.includes(productId);
+                });
+            }
+
+            // Handle "Select All" functionality
+            const selectAllCheckbox = document.getElementById('select-all-products');
+            selectAllCheckbox.addEventListener('change', function() {
+                const productCheckboxes = document.querySelectorAll('.product-select');
+                productCheckboxes.forEach((checkbox) => {
+                    checkbox.checked = this.checked;
+                    const productId = checkbox.getAttribute('data-product-id');
+                    if (this.checked && !selectedProductIds.includes(productId)) {
+                        selectedProductIds.push(productId);
+                    } else if (!this.checked) {
+                        selectedProductIds = selectedProductIds.filter((id) => id !== productId);
+                    }
+                });
+            });
+
+            // Handle individual checkbox changes
+            document.querySelectorAll('.product-select').forEach((checkbox) => {
+                checkbox.addEventListener('change', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    if (this.checked) {
+                        if (!selectedProductIds.includes(productId)) {
+                            selectedProductIds.push(productId);
+                        }
+                    } else {
+                        selectedProductIds = selectedProductIds.filter((id) => id !== productId);
+                        selectAllCheckbox.checked =
+                            false; // Uncheck "Select All" if any are unchecked
+                    }
+                });
+            });
+
+            // Add to cart button functionality
+            document.getElementById('add-to-cart-btn').addEventListener('click', function() {
+                if (selectedProductIds.length > 0) {
+                    document.getElementById('cart-product-ids').value = JSON.stringify(selectedProductIds);
+                    document.getElementById('cart-form').submit();
+                } else {
+                    alert('Please select at least one product to add to the cart.');
+                }
+            });
+
+            // Print selected products
+            document.getElementById('print-selected-btn').addEventListener('click', function() {
+                if (selectedProductIds.length === 0) {
+                    alert('No products selected!');
+                    return;
+                }
+
+                // Prepare printable content
+                const printableArea = document.createElement('div');
+                selectedProductIds.forEach((productId) => {
+                    const row = document.querySelector(`[data-product-id="${productId}"]`).closest(
+                        'tr').cloneNode(true);
+                    row.querySelector('td:first-child').remove(); // Remove the checkbox column
+                    printableArea.appendChild(row);
+                });
+
+                // Backup original content
+                const originalContent = document.body.innerHTML;
+
+                // Set printable content
+                document.body.innerHTML = `<table class="table">${printableArea.innerHTML}</table>`;
+
+                // Trigger print
+                window.print();
+
+                // Restore original content
+                document.body.innerHTML = originalContent;
+                window.location.reload(); // Reload to restore event listeners
+            });
+
+            // Restore selections when the page is loaded
+            restoreSelections();
+        });
     </script>
 @endsection
