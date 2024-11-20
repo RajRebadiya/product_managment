@@ -61,7 +61,7 @@ class HomeController extends Controller
                 'status' => $product->status,
                 'stock_status' => $product->stock_status,
                 // 'description' => $product->description,
-                // 'price' => $product->price,
+                'price' => $product->price,
                 'category_id' => $product->category_id,
                 'created_at' => $product->created_at->format('Y-m-d H:i:s'),
                 'updated_at' => $product->updated_at->format('Y-m-d H:i:s'),
@@ -87,13 +87,14 @@ class HomeController extends Controller
     {
 
 
-        dd($request->all());
+        // dd($request->all());
         $request->validate([
             'id' => 'required',
             'category_id' => 'required|exists:categories,id',
             'p_name' => 'required|string|max:255|unique:products,p_name',
             'stock_status' => 'required|string|max:255',
             'image' => 'required|image|mimes:jpeg,png,jpg,gif',
+          
 
         ]);
 
@@ -136,6 +137,7 @@ class HomeController extends Controller
         $product->category_id = $request->input('category_id');
         $product->image = $imageName;
         $product->stock_status = $request->input('stock_status');
+       
         $$product->save();
         return redirect()->back()->with('success', 'Product added successfully');
     }
@@ -240,6 +242,7 @@ class HomeController extends Controller
             'p_name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'stock_status' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
         ]);
 
         if ($request->hasFile('image')) {
@@ -264,6 +267,7 @@ class HomeController extends Controller
         $product->image = $imageName ?? $product->image;
         $product->status = $product->status;
         $product->category_name = $request->input('category_name');
+        $product->price = $request->input('price');
         $product->save();
         // dd('fine');
         return redirect('dashboard_2')->with('success', 'Product updated successfully.');
@@ -384,4 +388,5 @@ class HomeController extends Controller
         // Return the cart detail view with the cart items
         return view('admin.product.cart_product', compact('products'));
     }
+
 }

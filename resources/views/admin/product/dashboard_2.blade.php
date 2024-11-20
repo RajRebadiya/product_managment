@@ -77,7 +77,7 @@
         {{-- @dd($products); --}}
 
         <div id="tableExample3"
-            data-list='{"valueNames":["no","category_name","name","image" ,"stock_status" , "status"],"page":10,"pagination":true}'>
+            data-list='{"valueNames":["no","category_name","name","image" ,"stock_status" , "price", "status"],"page":10,"pagination":true}'>
             <div class="search-box mb-3 mx-auto">
                 <form class="position-relative">
                     <input class="form-control rounded-pill search-input search form-control-sm" type="search"
@@ -99,6 +99,7 @@
                             <th class="sort border-top" data-sort="image">image</th>
                             <th class="sort border-top" data-sort="name">Product Name</th>
                             <th class="sort border-top border-translucent ps-3" data-sort="category_name">Category Name</th>
+                            <th class="sort border-top border-translucent ps-3" data-sort="price">Price</th>
                             <th class="sort border-top border-translucent ps-3" data-sort="stock_status">Stock Status</th>
                             <th class="sort border-top border-translucent ps-3" data-sort="status">Status</th>
                             <th class="sort text-middle align-middle pe-0 border-top" scope="col">Edit</th>
@@ -145,6 +146,7 @@
                                 </div>
                                 <td class="align-middle name text-bold" style="font-weight: bold">{{ $item['name'] }}</td>
                                 <td class="align-middle ps-3 category_name">{{ $item['category_name'] }}</td>
+                                <td class="align-middle ps-3 price">{{ $item['price'] }}</td>
                                 <!-- Stock Status Dropdown with Colors -->
                                 <td class="align-middle stock_status">
                                     <!-- Hidden span for searchable text -->

@@ -16,6 +16,14 @@
                     <span class="text-danger">{{ $message }}</span>
                 @enderror
             </div>
+            <div class="mb-3">
+                <label for="price" class="form-label">Product Price</label>
+                <input type="text" class="form-control" id="price" name="price"
+                    value="{{ old('price', $product->price) }}" required>
+                @error('price')
+                    <span class="text-danger">{{ $message }}</span>
+                @enderror
+            </div>
 
             <input type="hidden" name="category_name" value="{{ $product->category_name }}">
 
