@@ -662,6 +662,7 @@ class ApiController extends Controller
                 'name' => $product->p_name,
                 'category_name' => $product->category ? $product->category->name : null,
                 'image' => $product->image,
+                'price' => $product->price,
                 'stock_status' => $product->stock_status,
                 'category_id' => $product->category_id,
                 'created_at' => $product->created_at->format('Y-m-d H:i:s'),
