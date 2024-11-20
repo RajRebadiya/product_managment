@@ -287,6 +287,15 @@ class HomeController extends Controller
         return redirect()->back()->with('success', 'Product status updated successfully.');
     }
 
+    public function category_update_status(Request $request)
+    {
+        $category = Category::findOrFail($request->category_id);
+        $category->name = $request->name;
+        $category->save();
+
+        return redirect()->back()->with('success', 'Category updated successfully.');
+    }
+
     public function addToCart(Request $request)
     {
         // Get the product IDs from the request

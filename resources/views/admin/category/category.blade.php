@@ -95,7 +95,7 @@
                                 <td class="align-middle ps-3 category_name">{{ $item['name'] }}</td>
                                 <!-- Status Dropdown with Colors -->
                                 <td class="align-middle status">
-                                    <form action="{{ route('update_status') }}" method="POST">
+                                    <form action="{{ route('category_update_status') }}" method="POST">
                                         @csrf
                                         <input type="hidden" name="product_id" value="{{ $item['id'] }}">
                                         <select name="status" class="form-select form-select-sm"

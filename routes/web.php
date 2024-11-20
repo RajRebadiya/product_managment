@@ -42,6 +42,7 @@ Route::controller(HomeController::class)->group(function () {
 
     Route::post('/update-stock-status', 'updateStockStatus')->name('update_stock_status');
     Route::post('/update-status', 'updateStatus')->name('update_status');
+    Route::post('/category_update_status', 'category_update_status')->name('category_update_status');
 
     Route::post('/add_to_cart', 'addToCart')->name('add_to_cart');
     Route::get('/cart', 'cart')->name('cart');
